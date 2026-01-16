@@ -1,3 +1,4 @@
+use chrono::{Datelike, Duration, NaiveDate, Weekday};
 use ratatui::{
     layout::{Constraint, Layout, Rect},
     style::{Color, Style},
@@ -93,20 +94,92 @@ fn render_habit_card(frame: &mut Frame, habit: &Habit, area: Rect, is_selected: 
     ]));
     frame.render_widget(stats, content_layout[0]);
 
-    // Heatmap placeholder
-    let day_labels = ["S", "M", "T", "W", "T", "F", "S"];
-    let heatmap_lines: Vec<Line> = day_labels
-        .iter()
-        .map(|label| {
-            Line::from(vec![
-                Span::raw(format!("{} ", label)),
-                Span::styled("□□□□□□□ □□□□□□□ □□□□□□□", Style::default().fg(Color::DarkGray)),
-            ])
-        })
-        .collect();
-
+    // Heatmap grid
+    let heatmap_lines = build_heatmap(habit);
     let heatmap = Paragraph::new(heatmap_lines);
     frame.render_widget(heatmap, content_layout[2]);
+}
+
+fn build_heatmap(habit: &Habit) -> Vec<Line<'static>> {
+    let today = chrono::Local::now().date_naive();
+    let three_months_ago = today - Duration::days(90);
+
+    // Find the Sunday at or before three_months_ago to start the grid
+    let start_date = find_previous_sunday(three_months_ago);
+
+    // Find the Saturday at or after today to end the grid
+    let end_date = find_next_saturday(today);
+
+    // Calculate number of weeks
+    let num_weeks = ((end_date - start_date).num_days() / 7 + 1) as usize;
+
+    // Build grid: 7 rows (Sun=0 through Sat=6), num_weeks columns
+    let mut grid: Vec<Vec<Option<bool>>> = vec![vec![None; num_weeks]; 7];
+
+    let mut current_date = start_date;
+    for week in 0..num_weeks {
+        for day in 0..7 {
+            if current_date <= today {
+                let is_completed = habit.completions.contains(&current_date);
+                grid[day][week] = Some(is_completed);
+            }
+            current_date += Duration::days(1);
+        }
+    }
+
+    // Build display lines
+    let day_labels = ["S", "M", "T", "W", "T", "F", "S"];
+    let mut lines: Vec<Line<'static>> = Vec::new();
+
+    for (row_idx, label) in day_labels.iter().enumerate() {
+        let mut spans: Vec<Span<'static>> = vec![Span::raw(format!("{} ", label))];
+
+        for (week_idx, cell) in grid[row_idx].iter().enumerate() {
+            let span = match cell {
+                Some(true) => Span::styled("■", Style::default().fg(Color::Green)),
+                Some(false) => Span::styled("□", Style::default().fg(Color::DarkGray)),
+                None => Span::raw(" "), // Future date
+            };
+            spans.push(span);
+
+            // Add space between weeks (every 7 days)
+            if week_idx < grid[row_idx].len() - 1 {
+                spans.push(Span::raw(" "));
+            }
+        }
+
+        lines.push(Line::from(spans));
+    }
+
+    lines
+}
+
+fn find_previous_sunday(date: NaiveDate) -> NaiveDate {
+    let weekday = date.weekday();
+    let days_since_sunday = match weekday {
+        Weekday::Sun => 0,
+        Weekday::Mon => 1,
+        Weekday::Tue => 2,
+        Weekday::Wed => 3,
+        Weekday::Thu => 4,
+        Weekday::Fri => 5,
+        Weekday::Sat => 6,
+    };
+    date - Duration::days(days_since_sunday)
+}
+
+fn find_next_saturday(date: NaiveDate) -> NaiveDate {
+    let weekday = date.weekday();
+    let days_until_saturday = match weekday {
+        Weekday::Sun => 6,
+        Weekday::Mon => 5,
+        Weekday::Tue => 4,
+        Weekday::Wed => 3,
+        Weekday::Thu => 2,
+        Weekday::Fri => 1,
+        Weekday::Sat => 0,
+    };
+    date + Duration::days(days_until_saturday)
 }
 
 fn render_controls_bar() -> Paragraph<'static> {
