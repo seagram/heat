@@ -8,7 +8,7 @@ use ratatui::{
 
 use crate::app::App;
 
-pub fn render(frame: &mut Frame, _app: &App) {
+pub fn render(frame: &mut Frame, app: &App) {
     let area = frame.area();
 
     let layout = Layout::vertical([Constraint::Min(0), Constraint::Length(1)]).split(area);
@@ -16,9 +16,15 @@ pub fn render(frame: &mut Frame, _app: &App) {
     let main_area = layout[0];
     let footer_area = layout[1];
 
-    // Main area - placeholder for now
-    let placeholder = Paragraph::new("heat").centered();
-    frame.render_widget(placeholder, main_area);
+    // Main area
+    if app.data.habits.is_empty() {
+        let empty_state = render_empty_state();
+        frame.render_widget(empty_state, main_area);
+    } else {
+        // TODO: render habit cards
+        let placeholder = Paragraph::new("heat").centered();
+        frame.render_widget(placeholder, main_area);
+    }
 
     // Controls bar footer
     let controls = render_controls_bar();
@@ -49,4 +55,22 @@ fn render_controls_bar() -> Paragraph<'static> {
     ]);
 
     Paragraph::new(controls).centered()
+}
+
+fn render_empty_state() -> Paragraph<'static> {
+    let lines = vec![
+        Line::from(""),
+        Line::from(Span::styled(
+            "No habits yet",
+            Style::default().fg(Color::DarkGray),
+        )),
+        Line::from(""),
+        Line::from(vec![
+            Span::raw("Press "),
+            Span::styled("a", Style::default().fg(Color::Yellow)),
+            Span::raw(" to add your first habit"),
+        ]),
+    ];
+
+    Paragraph::new(lines).centered()
 }
