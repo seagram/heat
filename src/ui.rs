@@ -72,14 +72,24 @@ fn render_habit_card(frame: &mut Frame, habit: &Habit, area: Rect, is_selected: 
     ])
     .split(inner_area);
 
-    // Stats row placeholder
+    // Stats row
+    let current_streak = habit.current_streak();
+    let longest_streak = habit.longest_streak();
+    let completion_pct = habit.completion_percentage();
+
+    let streak_text = if current_streak == 1 {
+        "1 day streak".to_string()
+    } else {
+        format!("{} day streak", current_streak)
+    };
+
     let stats = Paragraph::new(Line::from(vec![
         Span::raw("🔥 "),
-        Span::raw("-- day streak"),
+        Span::raw(streak_text),
         Span::styled(" │ ", Style::default().fg(Color::DarkGray)),
-        Span::raw("Best: --"),
+        Span::raw(format!("Best: {}", longest_streak)),
         Span::styled(" │ ", Style::default().fg(Color::DarkGray)),
-        Span::raw("--% (3 mo)"),
+        Span::raw(format!("{}% (3 mo)", completion_pct)),
     ]));
     frame.render_widget(stats, content_layout[0]);
 
