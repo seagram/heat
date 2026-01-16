@@ -47,6 +47,7 @@ fn run(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, app: &mut App) -> 
         }
 
         if app.should_quit {
+            storage::save_data(&app.data)?;
             return Ok(());
         }
     }
