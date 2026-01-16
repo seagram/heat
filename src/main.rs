@@ -1,25 +1,53 @@
+mod app;
 mod data;
 mod storage;
+mod ui;
 
-use data::Habit;
+use std::io;
 
-fn main() {
-    let mut app_data = storage::load_data().expect("Failed to load data");
+use crossterm::{
+    event::{self, Event, KeyCode, KeyEventKind},
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    ExecutableCommand,
+};
+use ratatui::prelude::*;
 
-    println!("heat");
-    println!("Data path: {:?}", storage::get_data_path());
-    println!("Loaded {} habits", app_data.habits.len());
+use app::App;
 
-    if app_data.habits.is_empty() {
-        let test_habit = Habit::new("Test Habit".to_string());
-        println!("Creating test habit: {}", test_habit.name);
-        app_data.habits.push(test_habit);
-        storage::save_data(&app_data).expect("Failed to save data");
-        println!("Saved data successfully");
-    } else {
-        println!("Existing habits:");
-        for habit in &app_data.habits {
-            println!("  - {} (created: {})", habit.name, habit.created_at);
+fn main() -> io::Result<()> {
+    let app_data = storage::load_data()?;
+    let mut app = App::new(app_data);
+
+    // Setup terminal
+    enable_raw_mode()?;
+    io::stdout().execute(EnterAlternateScreen)?;
+    let mut terminal = Terminal::new(CrosstermBackend::new(io::stdout()))?;
+
+    // Main loop
+    let result = run(&mut terminal, &mut app);
+
+    // Restore terminal
+    disable_raw_mode()?;
+    io::stdout().execute(LeaveAlternateScreen)?;
+
+    result
+}
+
+fn run(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, app: &mut App) -> io::Result<()> {
+    loop {
+        terminal.draw(|frame| ui::render(frame, app))?;
+
+        if let Event::Key(key) = event::read()? {
+            if key.kind == KeyEventKind::Press {
+                match key.code {
+                    KeyCode::Char('q') => app.quit(),
+                    _ => {}
+                }
+            }
+        }
+
+        if app.should_quit {
+            return Ok(());
         }
     }
 }
