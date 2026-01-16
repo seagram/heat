@@ -62,4 +62,25 @@ impl App {
             habit.toggle_today();
         }
     }
+
+    pub fn start_adding(&mut self) {
+        self.input_mode = InputMode::Adding;
+        self.input_buffer.clear();
+    }
+
+    pub fn cancel_input(&mut self) {
+        self.input_mode = InputMode::Normal;
+        self.input_buffer.clear();
+    }
+
+    pub fn confirm_add(&mut self) {
+        let name = self.input_buffer.trim().to_string();
+        if !name.is_empty() {
+            let habit = crate::data::Habit::new(name);
+            self.data.habits.push(habit);
+            self.selected_index = self.data.habits.len() - 1;
+        }
+        self.input_mode = InputMode::Normal;
+        self.input_buffer.clear();
+    }
 }

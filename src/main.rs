@@ -12,7 +12,7 @@ use crossterm::{
 };
 use ratatui::prelude::*;
 
-use app::App;
+use app::{App, InputMode};
 
 fn main() -> io::Result<()> {
     let app_data = storage::load_data()?;
@@ -39,17 +39,36 @@ fn run(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, app: &mut App) -> 
 
         if let Event::Key(key) = event::read()? {
             if key.kind == KeyEventKind::Press {
-                match key.code {
-                    KeyCode::Char('q') => app.quit(),
-                    KeyCode::Char('j') => app.select_next(),
-                    KeyCode::Char('k') => app.select_previous(),
-                    KeyCode::Char('g') => app.select_first(),
-                    KeyCode::Char('G') => app.select_last(),
-                    KeyCode::Enter => {
-                        app.toggle_today();
-                        storage::save_data(&app.data)?;
-                    }
-                    _ => {}
+                match app.input_mode {
+                    InputMode::Normal => match key.code {
+                        KeyCode::Char('q') => app.quit(),
+                        KeyCode::Char('j') => app.select_next(),
+                        KeyCode::Char('k') => app.select_previous(),
+                        KeyCode::Char('g') => app.select_first(),
+                        KeyCode::Char('G') => app.select_last(),
+                        KeyCode::Char('a') => app.start_adding(),
+                        KeyCode::Enter => {
+                            app.toggle_today();
+                            storage::save_data(&app.data)?;
+                        }
+                        _ => {}
+                    },
+                    InputMode::Adding => match key.code {
+                        KeyCode::Enter => {
+                            app.confirm_add();
+                            storage::save_data(&app.data)?;
+                        }
+                        KeyCode::Esc => app.cancel_input(),
+                        KeyCode::Backspace => {
+                            app.input_buffer.pop();
+                        }
+                        KeyCode::Char(c) => {
+                            app.input_buffer.push(c);
+                        }
+                        _ => {}
+                    },
+                    InputMode::Renaming => {}
+                    InputMode::Deleting => {}
                 }
             }
         }
