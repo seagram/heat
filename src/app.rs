@@ -56,4 +56,10 @@ impl App {
             self.selected_index = self.data.habits.len() - 1;
         }
     }
+
+    pub fn toggle_today(&mut self) {
+        if let Some(habit) = self.data.habits.get_mut(self.selected_index) {
+            habit.toggle_today();
+        }
+    }
 }

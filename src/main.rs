@@ -45,6 +45,10 @@ fn run(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, app: &mut App) -> 
                     KeyCode::Char('k') => app.select_previous(),
                     KeyCode::Char('g') => app.select_first(),
                     KeyCode::Char('G') => app.select_last(),
+                    KeyCode::Enter => {
+                        app.toggle_today();
+                        storage::save_data(&app.data)?;
+                    }
                     _ => {}
                 }
             }

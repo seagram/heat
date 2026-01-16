@@ -79,6 +79,16 @@ impl Habit {
         longest
     }
 
+    /// Toggle today's completion status
+    pub fn toggle_today(&mut self) {
+        let today = chrono::Local::now().date_naive();
+        if let Some(pos) = self.completions.iter().position(|&d| d == today) {
+            self.completions.remove(pos);
+        } else {
+            self.completions.push(today);
+        }
+    }
+
     /// Calculate completion percentage over last 3 months
     pub fn completion_percentage(&self) -> u32 {
         let today = chrono::Local::now().date_naive();
