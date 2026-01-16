@@ -31,4 +31,29 @@ impl App {
     pub fn quit(&mut self) {
         self.should_quit = true;
     }
+
+    pub fn select_next(&mut self) {
+        if self.data.habits.is_empty() {
+            return;
+        }
+        if self.selected_index < self.data.habits.len() - 1 {
+            self.selected_index += 1;
+        }
+    }
+
+    pub fn select_previous(&mut self) {
+        if self.selected_index > 0 {
+            self.selected_index -= 1;
+        }
+    }
+
+    pub fn select_first(&mut self) {
+        self.selected_index = 0;
+    }
+
+    pub fn select_last(&mut self) {
+        if !self.data.habits.is_empty() {
+            self.selected_index = self.data.habits.len() - 1;
+        }
+    }
 }

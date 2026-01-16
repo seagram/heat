@@ -44,14 +44,22 @@ fn render_habit_list(frame: &mut Frame, app: &App, area: Rect) {
 
     for (i, habit) in app.data.habits.iter().enumerate() {
         if i < card_areas.len() {
-            render_habit_card(frame, habit, card_areas[i]);
+            let is_selected = i == app.selected_index;
+            render_habit_card(frame, habit, card_areas[i], is_selected);
         }
     }
 }
 
-fn render_habit_card(frame: &mut Frame, habit: &Habit, area: Rect) {
+fn render_habit_card(frame: &mut Frame, habit: &Habit, area: Rect, is_selected: bool) {
+    let border_style = if is_selected {
+        Style::default().fg(Color::Yellow)
+    } else {
+        Style::default()
+    };
+
     let block = Block::default()
         .borders(Borders::ALL)
+        .border_style(border_style)
         .title(format!(" {} ", habit.name));
 
     let inner_area = block.inner(area);
