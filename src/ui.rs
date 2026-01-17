@@ -177,9 +177,11 @@ fn build_heatmap(habit: &Habit, width: u16, show_day_labels: bool) -> Vec<Line<'
         ((width.saturating_add(1)) / 2).saturating_sub(1).max(1) as usize
     };
 
-    // Calculate left padding to center the grid when not showing day labels
+    // Calculate left padding to center the grid
     let left_padding = if show_day_labels {
-        0
+        // With day labels: "S " (2 chars) + grid (2 * num_weeks - 1)
+        let content_width = (2 + num_weeks * 2).saturating_sub(1) as u16;
+        ((width.saturating_sub(content_width)) / 2) as usize
     } else {
         // Grid width = num_weeks cells + (num_weeks - 1) spaces = 2 * num_weeks - 1
         let grid_width = (num_weeks * 2).saturating_sub(1) as u16;
