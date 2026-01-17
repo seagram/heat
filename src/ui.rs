@@ -16,6 +16,18 @@ pub const fn card_height() -> u16 {
     CARD_HEIGHT
 }
 
+/// Truncate a string to fit within max_width, adding "..." if truncated
+fn truncate_name(name: &str, max_width: usize) -> String {
+    if name.chars().count() <= max_width {
+        name.to_string()
+    } else if max_width <= 3 {
+        name.chars().take(max_width).collect()
+    } else {
+        let truncated: String = name.chars().take(max_width - 3).collect();
+        format!("{}...", truncated)
+    }
+}
+
 pub fn render(frame: &mut Frame, app: &App) {
     let area = frame.area();
 
@@ -79,10 +91,14 @@ fn render_habit_card(frame: &mut Frame, habit: &Habit, area: Rect, is_selected: 
         Style::default()
     };
 
+    // Truncate name to fit within card width (minus borders and padding)
+    let max_name_width = area.width.saturating_sub(6) as usize;
+    let display_name = truncate_name(&habit.name, max_name_width);
+
     let block = Block::default()
         .borders(Borders::ALL)
         .border_style(border_style)
-        .title(format!(" {} ", habit.name));
+        .title(format!(" {} ", display_name));
 
     let inner_area = block.inner(area);
     frame.render_widget(block, area);
@@ -342,8 +358,8 @@ fn render_delete_popup(frame: &mut Frame, app: &App, area: Rect) {
         .data
         .habits
         .get(app.selected_index)
-        .map(|h| h.name.as_str())
-        .unwrap_or("");
+        .map(|h| truncate_name(&h.name, 17))
+        .unwrap_or_default();
 
     let popup_width = 32;
     let popup_height = 6;
