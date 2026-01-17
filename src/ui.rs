@@ -32,9 +32,11 @@ pub fn render(frame: &mut Frame, app: &App) {
     let controls = render_controls_bar();
     frame.render_widget(controls, footer_area);
 
-    // Render popup if in adding mode
+    // Render popup if in adding or renaming mode
     if app.input_mode == InputMode::Adding {
         render_add_popup(frame, app, area);
+    } else if app.input_mode == InputMode::Renaming {
+        render_rename_popup(frame, app, area);
     }
 }
 
@@ -242,6 +244,51 @@ fn render_add_popup(frame: &mut Frame, app: &App, area: Rect) {
 
     let block = Block::default()
         .title(" Add New Habit ")
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Yellow));
+
+    let inner = block.inner(popup_area);
+    frame.render_widget(block, popup_area);
+
+    let layout = Layout::vertical([
+        Constraint::Length(1), // empty line
+        Constraint::Length(1), // input line
+        Constraint::Length(1), // empty line
+        Constraint::Length(1), // help line
+    ])
+    .split(inner);
+
+    // Input line
+    let input_line = Line::from(vec![
+        Span::raw("  Name: "),
+        Span::styled(
+            format!("{}_", app.input_buffer),
+            Style::default().fg(Color::White),
+        ),
+    ]);
+    frame.render_widget(Paragraph::new(input_line), layout[1]);
+
+    // Help line
+    let help = Line::from(vec![
+        Span::styled("  Enter", Style::default().fg(Color::Yellow)),
+        Span::raw(": confirm  "),
+        Span::styled("Esc", Style::default().fg(Color::Yellow)),
+        Span::raw(": cancel"),
+    ]);
+    frame.render_widget(Paragraph::new(help), layout[3]);
+}
+
+fn render_rename_popup(frame: &mut Frame, app: &App, area: Rect) {
+    let popup_width = 32;
+    let popup_height = 6;
+
+    let popup_area = centered_rect(popup_width, popup_height, area);
+
+    // Clear the area behind the popup
+    frame.render_widget(Clear, popup_area);
+
+    let block = Block::default()
+        .title(" Rename Habit ")
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::Yellow));
 

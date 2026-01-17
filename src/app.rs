@@ -83,4 +83,22 @@ impl App {
         self.input_mode = InputMode::Normal;
         self.input_buffer.clear();
     }
+
+    pub fn start_renaming(&mut self) {
+        if let Some(habit) = self.data.habits.get(self.selected_index) {
+            self.input_buffer = habit.name.clone();
+            self.input_mode = InputMode::Renaming;
+        }
+    }
+
+    pub fn confirm_rename(&mut self) {
+        let name = self.input_buffer.trim().to_string();
+        if !name.is_empty() {
+            if let Some(habit) = self.data.habits.get_mut(self.selected_index) {
+                habit.name = name;
+            }
+        }
+        self.input_mode = InputMode::Normal;
+        self.input_buffer.clear();
+    }
 }
