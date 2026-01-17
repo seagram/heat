@@ -10,10 +10,15 @@ use ratatui::{
 use crate::app::{App, InputMode, GRID_COLUMNS};
 use crate::data::Habit;
 
-const CARD_HEIGHT: u16 = 11;
+const CARD_HEIGHT_WITH_STATS: u16 = 11;
+const CARD_HEIGHT_NO_STATS: u16 = 9;
 
-pub const fn card_height() -> u16 {
-    CARD_HEIGHT
+pub fn card_height(show_stats: bool) -> u16 {
+    if show_stats {
+        CARD_HEIGHT_WITH_STATS
+    } else {
+        CARD_HEIGHT_NO_STATS
+    }
 }
 
 /// Truncate a string to fit within max_width, adding "..." if truncated
@@ -64,8 +69,10 @@ fn render_habit_list(frame: &mut Frame, app: &App, area: Rect) {
         return;
     }
 
+    let current_card_height = card_height(app.show_stats);
+
     // Calculate how many rows can fit in the visible area
-    let visible_rows = (area.height / CARD_HEIGHT).max(1) as usize;
+    let visible_rows = (area.height / current_card_height).max(1) as usize;
 
     // Get the range of rows to render based on scroll offset
     let start_row = app.scroll_offset;
@@ -73,7 +80,7 @@ fn render_habit_list(frame: &mut Frame, app: &App, area: Rect) {
 
     // Create row constraints
     let row_constraints: Vec<Constraint> = (start_row..end_row)
-        .map(|_| Constraint::Length(CARD_HEIGHT))
+        .map(|_| Constraint::Length(current_card_height))
         .collect();
 
     let row_areas = Layout::vertical(row_constraints).split(area);
@@ -92,13 +99,13 @@ fn render_habit_list(frame: &mut Frame, app: &App, area: Rect) {
             if habit_index < app.data.habits.len() {
                 let habit = &app.data.habits[habit_index];
                 let is_selected = habit_index == app.selected_index;
-                render_habit_card(frame, habit, col_areas[col], is_selected);
+                render_habit_card(frame, habit, col_areas[col], is_selected, app.show_stats);
             }
         }
     }
 }
 
-fn render_habit_card(frame: &mut Frame, habit: &Habit, area: Rect, is_selected: bool) {
+fn render_habit_card(frame: &mut Frame, habit: &Habit, area: Rect, is_selected: bool, show_stats: bool) {
     let border_style = if is_selected {
         Style::default().fg(Color::Yellow)
     } else {
@@ -117,38 +124,45 @@ fn render_habit_card(frame: &mut Frame, habit: &Habit, area: Rect, is_selected: 
     let inner_area = block.inner(area);
     frame.render_widget(block, area);
 
-    let content_layout = Layout::vertical([
-        Constraint::Length(1), // Stats row
-        Constraint::Length(1), // Empty line
-        Constraint::Min(0),    // Heatmap area
-    ])
-    .split(inner_area);
+    if show_stats {
+        let content_layout = Layout::vertical([
+            Constraint::Length(1), // Stats row
+            Constraint::Length(1), // Empty line
+            Constraint::Min(0),    // Heatmap area
+        ])
+        .split(inner_area);
 
-    // Stats row
-    let current_streak = habit.current_streak();
-    let longest_streak = habit.longest_streak();
-    let completion_pct = habit.completion_percentage();
+        // Stats row
+        let current_streak = habit.current_streak();
+        let longest_streak = habit.longest_streak();
+        let completion_pct = habit.completion_percentage();
 
-    let streak_text = if current_streak == 1 {
-        "1 day streak".to_string()
+        let streak_text = if current_streak == 1 {
+            "1 day streak".to_string()
+        } else {
+            format!("{} day streak", current_streak)
+        };
+
+        let stats = Paragraph::new(Line::from(vec![
+            Span::raw("🔥 "),
+            Span::raw(streak_text),
+            Span::styled(" │ ", Style::default().fg(Color::DarkGray)),
+            Span::raw(format!("Best: {}", longest_streak)),
+            Span::styled(" │ ", Style::default().fg(Color::DarkGray)),
+            Span::raw(format!("{}% (3 mo)", completion_pct)),
+        ]));
+        frame.render_widget(stats, content_layout[0]);
+
+        // Heatmap grid
+        let heatmap_lines = build_heatmap(habit);
+        let heatmap = Paragraph::new(heatmap_lines);
+        frame.render_widget(heatmap, content_layout[2]);
     } else {
-        format!("{} day streak", current_streak)
-    };
-
-    let stats = Paragraph::new(Line::from(vec![
-        Span::raw("🔥 "),
-        Span::raw(streak_text),
-        Span::styled(" │ ", Style::default().fg(Color::DarkGray)),
-        Span::raw(format!("Best: {}", longest_streak)),
-        Span::styled(" │ ", Style::default().fg(Color::DarkGray)),
-        Span::raw(format!("{}% (3 mo)", completion_pct)),
-    ]));
-    frame.render_widget(stats, content_layout[0]);
-
-    // Heatmap grid
-    let heatmap_lines = build_heatmap(habit);
-    let heatmap = Paragraph::new(heatmap_lines);
-    frame.render_widget(heatmap, content_layout[2]);
+        // Just render the heatmap
+        let heatmap_lines = build_heatmap(habit);
+        let heatmap = Paragraph::new(heatmap_lines);
+        frame.render_widget(heatmap, inner_area);
+    }
 }
 
 fn build_heatmap(habit: &Habit) -> Vec<Line<'static>> {
@@ -251,6 +265,9 @@ fn render_controls_bar() -> Paragraph<'static> {
         separator.clone(),
         Span::styled("D", Style::default().fg(Color::Yellow)),
         Span::raw(": delete"),
+        separator.clone(),
+        Span::styled("s", Style::default().fg(Color::Yellow)),
+        Span::raw(": stats"),
         separator,
         Span::styled("q", Style::default().fg(Color::Yellow)),
         Span::raw(": quit"),

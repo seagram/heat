@@ -37,7 +37,7 @@ fn run(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, app: &mut App) -> 
     loop {
         // Adjust scroll offset for visible area
         let main_area_height = terminal.size()?.height.saturating_sub(1); // minus footer
-        app.adjust_scroll(main_area_height, ui::card_height());
+        app.adjust_scroll(main_area_height, ui::card_height(app.show_stats));
 
         terminal.draw(|frame| ui::render(frame, app))?;
 
@@ -55,6 +55,7 @@ fn run(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, app: &mut App) -> 
                         KeyCode::Char('a') => app.start_adding(),
                         KeyCode::Char('r') => app.start_renaming(),
                         KeyCode::Char('D') => app.start_deleting(),
+                        KeyCode::Char('s') => app.toggle_stats(),
                         KeyCode::Enter => {
                             app.toggle_today();
                             storage::save_data(&app.data)?;

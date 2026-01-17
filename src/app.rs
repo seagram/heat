@@ -18,6 +18,7 @@ pub struct App {
     pub input_mode: InputMode,
     pub input_buffer: String,
     pub scroll_offset: usize, // Now represents row offset, not card offset
+    pub show_stats: bool,
 }
 
 impl App {
@@ -29,6 +30,7 @@ impl App {
             input_mode: InputMode::Normal,
             input_buffer: String::new(),
             scroll_offset: 0,
+            show_stats: false,
         }
     }
 
@@ -71,6 +73,10 @@ impl App {
 
     pub fn quit(&mut self) {
         self.should_quit = true;
+    }
+
+    pub fn toggle_stats(&mut self) {
+        self.show_stats = !self.show_stats;
     }
 
     /// Move down one row (j key)
