@@ -32,11 +32,13 @@ pub fn render(frame: &mut Frame, app: &App) {
     let controls = render_controls_bar();
     frame.render_widget(controls, footer_area);
 
-    // Render popup if in adding or renaming mode
+    // Render popup if in adding, renaming, or deleting mode
     if app.input_mode == InputMode::Adding {
         render_add_popup(frame, app, area);
     } else if app.input_mode == InputMode::Renaming {
         render_rename_popup(frame, app, area);
+    } else if app.input_mode == InputMode::Deleting {
+        render_delete_popup(frame, app, area);
     }
 }
 
@@ -319,6 +321,52 @@ fn render_rename_popup(frame: &mut Frame, app: &App, area: Rect) {
         Span::raw(": confirm  "),
         Span::styled("Esc", Style::default().fg(Color::Yellow)),
         Span::raw(": cancel"),
+    ]);
+    frame.render_widget(Paragraph::new(help), layout[3]);
+}
+
+fn render_delete_popup(frame: &mut Frame, app: &App, area: Rect) {
+    let habit_name = app
+        .data
+        .habits
+        .get(app.selected_index)
+        .map(|h| h.name.as_str())
+        .unwrap_or("");
+
+    let popup_width = 32;
+    let popup_height = 6;
+
+    let popup_area = centered_rect(popup_width, popup_height, area);
+
+    // Clear the area behind the popup
+    frame.render_widget(Clear, popup_area);
+
+    let block = Block::default()
+        .title(" Delete Habit ")
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Yellow));
+
+    let inner = block.inner(popup_area);
+    frame.render_widget(block, popup_area);
+
+    let layout = Layout::vertical([
+        Constraint::Length(1), // empty line
+        Constraint::Length(1), // prompt line
+        Constraint::Length(1), // empty line
+        Constraint::Length(1), // help line
+    ])
+    .split(inner);
+
+    // Prompt line
+    let prompt = Line::from(format!("  Delete \"{}\"?", habit_name));
+    frame.render_widget(Paragraph::new(prompt), layout[1]);
+
+    // Help line
+    let help = Line::from(vec![
+        Span::styled("  y", Style::default().fg(Color::Yellow)),
+        Span::raw(": yes  "),
+        Span::styled("n", Style::default().fg(Color::Yellow)),
+        Span::raw(": no"),
     ]);
     frame.render_widget(Paragraph::new(help), layout[3]);
 }

@@ -101,4 +101,25 @@ impl App {
         self.input_mode = InputMode::Normal;
         self.input_buffer.clear();
     }
+
+    pub fn start_deleting(&mut self) {
+        if !self.data.habits.is_empty() {
+            self.input_mode = InputMode::Deleting;
+        }
+    }
+
+    pub fn confirm_delete(&mut self) {
+        if self.selected_index < self.data.habits.len() {
+            self.data.habits.remove(self.selected_index);
+            // Adjust selected_index if we deleted the last item
+            if self.selected_index >= self.data.habits.len() && !self.data.habits.is_empty() {
+                self.selected_index = self.data.habits.len() - 1;
+            }
+        }
+        self.input_mode = InputMode::Normal;
+    }
+
+    pub fn cancel_delete(&mut self) {
+        self.input_mode = InputMode::Normal;
+    }
 }

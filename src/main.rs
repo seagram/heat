@@ -48,6 +48,7 @@ fn run(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, app: &mut App) -> 
                         KeyCode::Char('G') => app.select_last(),
                         KeyCode::Char('a') => app.start_adding(),
                         KeyCode::Char('r') => app.start_renaming(),
+                        KeyCode::Char('D') => app.start_deleting(),
                         KeyCode::Enter => {
                             app.toggle_today();
                             storage::save_data(&app.data)?;
@@ -82,7 +83,14 @@ fn run(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, app: &mut App) -> 
                         }
                         _ => {}
                     },
-                    InputMode::Deleting => {}
+                    InputMode::Deleting => match key.code {
+                        KeyCode::Char('y') => {
+                            app.confirm_delete();
+                            storage::save_data(&app.data)?;
+                        }
+                        KeyCode::Char('n') | KeyCode::Esc => app.cancel_delete(),
+                        _ => {}
+                    },
                 }
             }
         }
