@@ -89,30 +89,21 @@ impl Habit {
         }
     }
 
-    /// Calculate completion percentage over last 3 months
+    /// Calculate completion percentage since habit creation
     pub fn completion_percentage(&self) -> u32 {
         let today = chrono::Local::now().date_naive();
-        let three_months_ago = today - chrono::Duration::days(90);
-
-        // Count days from the later of: 3 months ago or habit creation date
-        let start_date = if self.created_at > three_months_ago {
-            self.created_at
-        } else {
-            three_months_ago
-        };
-
-        let total_days = (today - start_date).num_days() + 1;
+        let total_days = (today - self.created_at).num_days() + 1;
         if total_days <= 0 {
             return 0;
         }
 
-        let completions_in_range = self
+        let completions_count = self
             .completions
             .iter()
-            .filter(|&date| *date >= start_date && *date <= today)
+            .filter(|&date| *date >= self.created_at && *date <= today)
             .count() as i64;
 
-        ((completions_in_range * 100) / total_days) as u32
+        ((completions_count * 100) / total_days) as u32
     }
 }
 

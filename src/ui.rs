@@ -147,7 +147,7 @@ fn render_habit_card(frame: &mut Frame, habit: &Habit, area: Rect, is_selected: 
             Span::styled(" │ ", Style::default().fg(Color::DarkGray)),
             Span::raw(format!("Best: {}", longest_streak)),
             Span::styled(" │ ", Style::default().fg(Color::DarkGray)),
-            Span::raw(format!("{}% (3 mo)", completion_pct)),
+            Span::raw(format!("{}%", completion_pct)),
         ]))
         .centered();
         frame.render_widget(stats, content_layout[0]);
