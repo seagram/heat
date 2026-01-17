@@ -10,7 +10,7 @@ use ratatui::{
 use crate::app::{App, InputMode, GRID_COLUMNS};
 use crate::data::Habit;
 
-const CARD_HEIGHT_WITH_STATS: u16 = 11;
+const CARD_HEIGHT_WITH_STATS: u16 = 10;
 const CARD_HEIGHT_NO_STATS: u16 = 9;
 
 pub fn card_height(show_stats: bool) -> u16 {
@@ -127,7 +127,6 @@ fn render_habit_card(frame: &mut Frame, habit: &Habit, area: Rect, is_selected: 
     if show_stats {
         let content_layout = Layout::vertical([
             Constraint::Length(1), // Stats row
-            Constraint::Length(1), // Empty line
             Constraint::Min(0),    // Heatmap area
         ])
         .split(inner_area);
@@ -149,13 +148,14 @@ fn render_habit_card(frame: &mut Frame, habit: &Habit, area: Rect, is_selected: 
             Span::raw(format!("Best: {}", longest_streak)),
             Span::styled(" │ ", Style::default().fg(Color::DarkGray)),
             Span::raw(format!("{}% (3 mo)", completion_pct)),
-        ]));
+        ]))
+        .centered();
         frame.render_widget(stats, content_layout[0]);
 
         // Heatmap grid (with day labels when stats are shown)
-        let heatmap_lines = build_heatmap(habit, content_layout[2].width, true);
+        let heatmap_lines = build_heatmap(habit, content_layout[1].width, true);
         let heatmap = Paragraph::new(heatmap_lines);
-        frame.render_widget(heatmap, content_layout[2]);
+        frame.render_widget(heatmap, content_layout[1]);
     } else {
         // Just render the heatmap (no day labels)
         let heatmap_lines = build_heatmap(habit, inner_area.width, false);
