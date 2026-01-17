@@ -12,6 +12,10 @@ use crate::data::Habit;
 
 const CARD_HEIGHT: u16 = 11;
 
+pub const fn card_height() -> u16 {
+    CARD_HEIGHT
+}
+
 pub fn render(frame: &mut Frame, app: &App) {
     let area = frame.area();
 
@@ -43,18 +47,26 @@ pub fn render(frame: &mut Frame, app: &App) {
 }
 
 fn render_habit_list(frame: &mut Frame, app: &App, area: Rect) {
-    let card_constraints: Vec<Constraint> = app
-        .data
-        .habits
+    // Calculate how many cards can fit in the visible area
+    let visible_cards = (area.height / CARD_HEIGHT).max(1) as usize;
+
+    // Get the slice of habits to render based on scroll offset
+    let start = app.scroll_offset;
+    let end = (start + visible_cards + 1).min(app.data.habits.len());
+
+    let visible_habits: Vec<_> = app.data.habits[start..end].iter().collect();
+
+    let card_constraints: Vec<Constraint> = visible_habits
         .iter()
         .map(|_| Constraint::Length(CARD_HEIGHT))
         .collect();
 
     let card_areas = Layout::vertical(card_constraints).split(area);
 
-    for (i, habit) in app.data.habits.iter().enumerate() {
+    for (i, habit) in visible_habits.iter().enumerate() {
         if i < card_areas.len() {
-            let is_selected = i == app.selected_index;
+            let actual_index = start + i;
+            let is_selected = actual_index == app.selected_index;
             render_habit_card(frame, habit, card_areas[i], is_selected);
         }
     }

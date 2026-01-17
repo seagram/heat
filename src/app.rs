@@ -15,6 +15,7 @@ pub struct App {
     pub selected_index: usize,
     pub input_mode: InputMode,
     pub input_buffer: String,
+    pub scroll_offset: usize,
 }
 
 impl App {
@@ -25,6 +26,24 @@ impl App {
             selected_index: 0,
             input_mode: InputMode::Normal,
             input_buffer: String::new(),
+            scroll_offset: 0,
+        }
+    }
+
+    pub fn adjust_scroll(&mut self, visible_height: u16, card_height: u16) {
+        if card_height == 0 {
+            return;
+        }
+        let visible_cards = (visible_height / card_height).max(1) as usize;
+
+        // If selection is above visible area, scroll up
+        if self.selected_index < self.scroll_offset {
+            self.scroll_offset = self.selected_index;
+        }
+
+        // If selection is below visible area, scroll down
+        if self.selected_index >= self.scroll_offset + visible_cards {
+            self.scroll_offset = self.selected_index.saturating_sub(visible_cards - 1);
         }
     }
 

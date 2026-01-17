@@ -35,6 +35,10 @@ fn main() -> io::Result<()> {
 
 fn run(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, app: &mut App) -> io::Result<()> {
     loop {
+        // Adjust scroll offset for visible area
+        let main_area_height = terminal.size()?.height.saturating_sub(1); // minus footer
+        app.adjust_scroll(main_area_height, ui::card_height());
+
         terminal.draw(|frame| ui::render(frame, app))?;
 
         if let Event::Key(key) = event::read()? {
