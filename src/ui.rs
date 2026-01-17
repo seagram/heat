@@ -144,7 +144,6 @@ fn render_habit_card(frame: &mut Frame, habit: &Habit, area: Rect, is_selected: 
         };
 
         let stats = Paragraph::new(Line::from(vec![
-            Span::raw("🔥 "),
             Span::raw(streak_text),
             Span::styled(" │ ", Style::default().fg(Color::DarkGray)),
             Span::raw(format!("Best: {}", longest_streak)),
@@ -153,25 +152,39 @@ fn render_habit_card(frame: &mut Frame, habit: &Habit, area: Rect, is_selected: 
         ]));
         frame.render_widget(stats, content_layout[0]);
 
-        // Heatmap grid
-        let heatmap_lines = build_heatmap(habit, content_layout[2].width);
+        // Heatmap grid (with day labels when stats are shown)
+        let heatmap_lines = build_heatmap(habit, content_layout[2].width, true);
         let heatmap = Paragraph::new(heatmap_lines);
         frame.render_widget(heatmap, content_layout[2]);
     } else {
-        // Just render the heatmap
-        let heatmap_lines = build_heatmap(habit, inner_area.width);
+        // Just render the heatmap (no day labels)
+        let heatmap_lines = build_heatmap(habit, inner_area.width, false);
         let heatmap = Paragraph::new(heatmap_lines);
         frame.render_widget(heatmap, inner_area);
     }
 }
 
-fn build_heatmap(habit: &Habit, width: u16) -> Vec<Line<'static>> {
+fn build_heatmap(habit: &Habit, width: u16, show_day_labels: bool) -> Vec<Line<'static>> {
     let today = chrono::Local::now().date_naive();
 
     // Calculate how many week columns can fit in the available width
-    // Each row: "S " (2 chars) + n cells (1 char each) + (n-1) spaces = 2 + 2n - 1 = 2n + 1
-    // Subtract extra for right margin
-    let num_weeks = ((width.saturating_sub(3)) / 2).max(1) as usize;
+    // With day labels: "S " (2 chars) + n cells (1 char each) + (n-1) spaces = 2 + 2n - 1 = 2n + 1
+    // Without day labels: n cells (1 char each) + (n-1) spaces = 2n - 1, minus 1 for padding
+    let num_weeks = if show_day_labels {
+        ((width.saturating_sub(3)) / 2).max(1) as usize
+    } else {
+        // Subtract 1 from max to leave comfortable margins
+        ((width.saturating_add(1)) / 2).saturating_sub(1).max(1) as usize
+    };
+
+    // Calculate left padding to center the grid when not showing day labels
+    let left_padding = if show_day_labels {
+        0
+    } else {
+        // Grid width = num_weeks cells + (num_weeks - 1) spaces = 2 * num_weeks - 1
+        let grid_width = (num_weeks * 2).saturating_sub(1) as u16;
+        ((width.saturating_sub(grid_width)) / 2) as usize
+    };
 
     // Find the Saturday at or after today to end the grid
     let end_date = find_next_saturday(today);
@@ -200,7 +213,17 @@ fn build_heatmap(habit: &Habit, width: u16) -> Vec<Line<'static>> {
     let mut lines: Vec<Line<'static>> = Vec::new();
 
     for (row_idx, label) in day_labels.iter().enumerate() {
-        let mut spans: Vec<Span<'static>> = vec![Span::raw(format!("{} ", label))];
+        let mut spans: Vec<Span<'static>> = Vec::new();
+
+        // Add left padding to center the grid when not showing day labels
+        if left_padding > 0 {
+            spans.push(Span::raw(" ".repeat(left_padding)));
+        }
+
+        // Only add day label if show_day_labels is true
+        if show_day_labels {
+            spans.push(Span::raw(format!("{} ", label)));
+        }
 
         for (week_idx, cell) in grid[row_idx].iter().enumerate() {
             let span = match cell {
