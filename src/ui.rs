@@ -154,29 +154,32 @@ fn render_habit_card(frame: &mut Frame, habit: &Habit, area: Rect, is_selected: 
         frame.render_widget(stats, content_layout[0]);
 
         // Heatmap grid
-        let heatmap_lines = build_heatmap(habit);
+        let heatmap_lines = build_heatmap(habit, content_layout[2].width);
         let heatmap = Paragraph::new(heatmap_lines);
         frame.render_widget(heatmap, content_layout[2]);
     } else {
         // Just render the heatmap
-        let heatmap_lines = build_heatmap(habit);
+        let heatmap_lines = build_heatmap(habit, inner_area.width);
         let heatmap = Paragraph::new(heatmap_lines);
         frame.render_widget(heatmap, inner_area);
     }
 }
 
-fn build_heatmap(habit: &Habit) -> Vec<Line<'static>> {
+fn build_heatmap(habit: &Habit, width: u16) -> Vec<Line<'static>> {
     let today = chrono::Local::now().date_naive();
-    let three_months_ago = today - Duration::days(90);
 
-    // Find the Sunday at or before three_months_ago to start the grid
-    let start_date = find_previous_sunday(three_months_ago);
+    // Calculate how many week columns can fit in the available width
+    // Each row: "S " (2 chars) + n cells (1 char each) + (n-1) spaces = 2 + 2n - 1 = 2n + 1
+    // Subtract extra for right margin
+    let num_weeks = ((width.saturating_sub(3)) / 2).max(1) as usize;
 
     // Find the Saturday at or after today to end the grid
     let end_date = find_next_saturday(today);
 
-    // Calculate number of weeks
-    let num_weeks = ((end_date - start_date).num_days() / 7 + 1) as usize;
+    // Calculate start date: Sunday of the first week
+    // end_date is Saturday, so Sunday of that week is end_date - 6
+    // Then go back (num_weeks - 1) full weeks
+    let start_date = end_date - Duration::days(6 + (num_weeks as i64 - 1) * 7);
 
     // Build grid: 7 rows (Sun=0 through Sat=6), num_weeks columns
     let mut grid: Vec<Vec<Option<bool>>> = vec![vec![None; num_weeks]; 7];
@@ -217,20 +220,6 @@ fn build_heatmap(habit: &Habit) -> Vec<Line<'static>> {
     }
 
     lines
-}
-
-fn find_previous_sunday(date: NaiveDate) -> NaiveDate {
-    let weekday = date.weekday();
-    let days_since_sunday = match weekday {
-        Weekday::Sun => 0,
-        Weekday::Mon => 1,
-        Weekday::Tue => 2,
-        Weekday::Wed => 3,
-        Weekday::Thu => 4,
-        Weekday::Fri => 5,
-        Weekday::Sat => 6,
-    };
-    date - Duration::days(days_since_sunday)
 }
 
 fn find_next_saturday(date: NaiveDate) -> NaiveDate {
