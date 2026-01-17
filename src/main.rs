@@ -46,8 +46,10 @@ fn run(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, app: &mut App) -> 
                 match app.input_mode {
                     InputMode::Normal => match key.code {
                         KeyCode::Char('q') => app.quit(),
-                        KeyCode::Char('j') => app.select_next(),
-                        KeyCode::Char('k') => app.select_previous(),
+                        KeyCode::Char('j') => app.select_down(),
+                        KeyCode::Char('k') => app.select_up(),
+                        KeyCode::Char('h') => app.select_left(),
+                        KeyCode::Char('l') => app.select_right(),
                         KeyCode::Char('g') => app.select_first(),
                         KeyCode::Char('G') => app.select_last(),
                         KeyCode::Char('a') => app.start_adding(),

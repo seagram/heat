@@ -7,7 +7,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::app::{App, InputMode};
+use crate::app::{App, InputMode, GRID_COLUMNS};
 use crate::data::Habit;
 
 const CARD_HEIGHT: u16 = 11;
@@ -59,27 +59,41 @@ pub fn render(frame: &mut Frame, app: &App) {
 }
 
 fn render_habit_list(frame: &mut Frame, app: &App, area: Rect) {
-    // Calculate how many cards can fit in the visible area
-    let visible_cards = (area.height / CARD_HEIGHT).max(1) as usize;
+    let total_rows = app.total_rows();
+    if total_rows == 0 {
+        return;
+    }
 
-    // Get the slice of habits to render based on scroll offset
-    let start = app.scroll_offset;
-    let end = (start + visible_cards + 1).min(app.data.habits.len());
+    // Calculate how many rows can fit in the visible area
+    let visible_rows = (area.height / CARD_HEIGHT).max(1) as usize;
 
-    let visible_habits: Vec<_> = app.data.habits[start..end].iter().collect();
+    // Get the range of rows to render based on scroll offset
+    let start_row = app.scroll_offset;
+    let end_row = (start_row + visible_rows + 1).min(total_rows);
 
-    let card_constraints: Vec<Constraint> = visible_habits
-        .iter()
+    // Create row constraints
+    let row_constraints: Vec<Constraint> = (start_row..end_row)
         .map(|_| Constraint::Length(CARD_HEIGHT))
         .collect();
 
-    let card_areas = Layout::vertical(card_constraints).split(area);
+    let row_areas = Layout::vertical(row_constraints).split(area);
 
-    for (i, habit) in visible_habits.iter().enumerate() {
-        if i < card_areas.len() {
-            let actual_index = start + i;
-            let is_selected = actual_index == app.selected_index;
-            render_habit_card(frame, habit, card_areas[i], is_selected);
+    // Create column constraints (equal width for each column)
+    let col_constraints: Vec<Constraint> = (0..GRID_COLUMNS)
+        .map(|_| Constraint::Ratio(1, GRID_COLUMNS as u32))
+        .collect();
+
+    for (row_offset, row_area) in row_areas.iter().enumerate() {
+        let row = start_row + row_offset;
+        let col_areas = Layout::horizontal(col_constraints.clone()).split(*row_area);
+
+        for col in 0..GRID_COLUMNS {
+            let habit_index = row * GRID_COLUMNS + col;
+            if habit_index < app.data.habits.len() {
+                let habit = &app.data.habits[habit_index];
+                let is_selected = habit_index == app.selected_index;
+                render_habit_card(frame, habit, col_areas[col], is_selected);
+            }
         }
     }
 }
@@ -223,7 +237,7 @@ fn render_controls_bar() -> Paragraph<'static> {
     let separator = Span::styled(" │ ", Style::default().fg(Color::DarkGray));
 
     let controls = Line::from(vec![
-        Span::styled("j/k", Style::default().fg(Color::Yellow)),
+        Span::styled("h/j/k/l", Style::default().fg(Color::Yellow)),
         Span::raw(": navigate"),
         separator.clone(),
         Span::styled("Enter", Style::default().fg(Color::Yellow)),
